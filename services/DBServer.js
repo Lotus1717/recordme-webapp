@@ -48,13 +48,17 @@ let query = (sql, todos) => {
     pool.getConnection((err, connection) => {
       connection.query(sql, todos, (error, results) => {
         if (error) {
-          reject(error)
+          let param = {
+            result: false,
+            error: error
+          }
+          reject(param)
         } else {
           let param = {
             result: true,
             data: JSON.parse(JSON.stringify(results))  //去掉打印出的RowDataPacket
           }  
-          resolve(param)    
+          resolve(param)   
         }    
       })
       connection.release()
@@ -73,8 +77,11 @@ const insertRecord = (params) => {
   console.log(insertRecordSql)
   return query(insertRecordSql, todo).then(res => {
     console.log(res)
+    let param = {
+      result: false,
+      data: null
+    }
     if(res.result){
-      let param 
       if(res.data.insertId > 0){
         param = {
           result: true,
@@ -89,9 +96,9 @@ const insertRecord = (params) => {
           data: null,
           msg: '插入文本记录失败'
         }
-      }
-      return param
+      }      
     }
+    return param
   }).catch(e => {
     console.log(e)
   })
@@ -104,16 +111,17 @@ const insertRecord = (params) => {
  */
 const insertMultiMark = (params) => {
   let todos = []
-  console.log(params)
   params.markList.forEach(val => {
     todos.push([val.markText, params.recordId])
   })
   let insertMarkSql = `INSERT INTO MARK(MARK_TEXT, RECORD_ID) VALUES ?`
   console.log(insertMarkSql)
   return query(insertMarkSql, [todos]).then(res => {
-    console.log(res)
-    if(res.result){
-      let param 
+    let param = {
+      result: false,
+      data: null
+    }
+    if(res.result){ 
       let data = res.data
       if(data.length > 0){
         param = {
@@ -127,9 +135,9 @@ const insertMultiMark = (params) => {
           data: null,
           msg: '插入文本标注失败'
         }
-      }
-      return param
+      }     
     }
+    return param
   }).catch(e => {
     console.log(e)
   })
@@ -141,28 +149,57 @@ const insertMultiMark = (params) => {
  * @return promise
  */
 const deleteRecord = (params) => {
-  let sql = `DELECT FROM MARK WHERE RECORD_ID = ${params.recordId}`
+  let sql = `DELETE FROM RECORD WHERE RECORD_ID = ${params.recordId}`
   console.log(sql)
   return query(sql, null).then(res => {
-    console.log(res)
+    let param = {
+      result: false,
+      data: null
+    }
     if(res.result){
-      let param 
       let data = res.data
-      if(data){
+      if(data.affectedRows > 0){
         param = {
           result: true,
           data: null,
           msg: '删除记录成功'
         }
       } else {
-        param = {
-          result: false,
-          data: null,
-          msg: '删除记录失败'
-        }
-      }
-      return param
+        param.msg = '删除记录失败'
+      } 
     }
+    return param
+  }).catch(e => {
+    console.log(e)
+  })
+}
+
+/** 
+ * 删除标注
+ * @param [object] params {recordId: ''}
+ * @return promise
+ */
+const deleteMark = (params) => {
+  let sql = `DELETE FROM MARK WHERE RECORD_ID = ${params.recordId}`
+  console.log(sql)
+  return query(sql, null).then(res => {
+    let param = {
+      result: false,
+      data: null
+    }
+    if(res.result){
+      let data = res.data
+      if(data.affectedRows > 0){
+        param = {
+          result: true,
+          data: null,
+          msg: '删除标注成功'
+        }
+      } else {
+        param.msg = '删除标注失败'
+      } 
+    }
+    return param
   }).catch(e => {
     console.log(e)
   })
@@ -177,8 +214,11 @@ const queryRecord = (params) => {
   let sql = `SELECT * FROM RECORD WHERE USER_ID = ${params.userId} AND RECORD_NAME = '${params.recordName}'`
   console.log(sql)
   return query(sql, null).then(res => {
+    let param = {
+      result: false,
+      data: null
+    }
     if(res.result){
-      let param 
       let data = res.data
       if(data.length > 0){
         param = {
@@ -197,8 +237,8 @@ const queryRecord = (params) => {
           msg: '查询记录失败'
         }
       }
-      return param
     }
+    return param
   }).catch(e => {
     console.log(e)
   })
@@ -213,8 +253,11 @@ const queryUser = (params) => {
   let sql = `SELECT * FROM USER WHERE USER_NAME = '${params.name}' AND USER_PASSWORD = '${params.password}'`
   console.log(sql)
   return query(sql, null).then(res => {
+    let param = {
+      result: false,
+      data: null
+    }
     if(res.result){
-      let param 
       if(res.data.length > 0){
         param = {
           result: true,
@@ -229,23 +272,19 @@ const queryUser = (params) => {
           data: null,
           msg: '查询用户失败'
         }
-      }
-      return param
+      }     
     }
+    return param
   }).catch(e => {
     console.log(e)
   })
 }
-
-// // 测试
-// queryUser({name: 'tanmy', password: '172014'}).then(res => {
-//   console.log(res)
-// })
 
 exports.DBServer = {
   insertRecord,
   insertMultiMark,
   queryRecord,
   queryUser,
-  deleteRecord
+  deleteRecord,
+  deleteMark
 }
