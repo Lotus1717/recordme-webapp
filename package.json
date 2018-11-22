@@ -2,6 +2,7 @@
   "name": "recordme",
   "description": "网页文本记录工具",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "mysql": "^2.16.0"
   }

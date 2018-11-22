@@ -22,6 +22,7 @@ let httpObj = http.createServer((request, response) => {
     })
     // POST结束输出结果
     request.on('end', () => {
+      console.log(data)
       // 完整的post数据
       params = JSON.parse(data) 
       // http请求分发
