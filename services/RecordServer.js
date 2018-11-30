@@ -27,15 +27,14 @@ const updateRecord = (params) => {
   }
   // 1.查询记录
   return DBServer.queryRecord({userId: params.userId, recordName: params.data.title}).then(res => {
+    console.log(res)
     if (res.result) {
       // 2.删除原来的记录      
-      return DBServer.deleteRecord({recordId: res.data.recordId})
-    }
-  }).then(res => {    
-    if (res.result) {
-      // 3.插入新的记录和标注
-      return insertRecordAndMarks()
+      return DBServer.deleteRecord({recordId: res.data.recordId, userId: params.userId})
     } 
+  }).then(res => {    
+    // 3.插入新的记录和标注
+    return insertRecordAndMarks()
   }).then(res => {  
     if (params.data.tags.length > 0) {
       if (res.result) {
@@ -53,7 +52,11 @@ const updateRecord = (params) => {
       // 5.查询标签Id
       let param = {userId: params.userId, tags: params.data.tags}
       return DBServer.queryTags(param)
-    }  
+    } else {
+      return {
+        result: false
+      }
+    }
   }).then(res => {   
     if (res.result) {
       // 6.插入新的标签记录关系
@@ -68,9 +71,28 @@ const updateRecord = (params) => {
 }
 
 /** 
- * 查找用户的所有记录 
+ * 查找用户的所有记录详情
+ * 1.查找所有记录id
+ * 2.查询记录id对应的标注  -- 1.2步可以优化，两张表联连接查询
+ * 3.查询标签
  * @param [object] params {userId: ''}
- * @return promise
+ * @return promise 
+ * {
+      "result": true,
+      "data": [{
+        "recordId": 0,
+        "recordName": "",
+        "recordUrl": "",
+        "markList": [{
+          "markId": 0,
+          "markText": ""
+        }],
+        "tagList": [{
+          "tagId": 0,
+          "tagName": ""
+        }]
+      }]
+    }
  */
 const queryPageRecords = (params) => {
   console.log('调用recordServer queryPageRecords方法')
@@ -85,10 +107,19 @@ const queryPageRecords = (params) => {
       return DBServer.queryMarkList({recordIds})
     }
   }).then(res => {
-    let returnParam
     if (res.result) {
       res.data.forEach((val, i) => {
         list[i].markList = val
+      })     
+    } 
+  }).then(res => {
+    let param = {recordIds}
+    return DBServer.queryRecordTags(param)
+  }).then(res => {
+    let returnParam
+    if(res.result){
+      res.data.forEach((val, i) => {
+        list[i].tagList = val
       })
       returnParam = {
         result: true,
@@ -101,13 +132,34 @@ const queryPageRecords = (params) => {
       }
     }
     return returnParam
-  }).then(res => {
-    let param = {recordIds}
-    return DBServer.queryRecordTags(param)
   })
+}
+
+/** 
+ * 删除一条标注 
+ * @param [object] params {data: {markId: '', recordId: ''}, userId: ''}
+ * @return promise
+ */
+const deleteMark = (params) => {
+  console.log('调用recordServer deleteMark方法')
+  // 暂时不用userId做身份验证，应该要检查recordId是否属于此userId用户 
+  return DBServer.deleteMark(params.data)
+}
+
+/** 
+ * 删除一条记录 
+ * @param [object] params {data: {recordId: ''}, userId: ''}
+ * @return promise
+ */
+const deleteRecord = (params) => {
+  console.log('调用recordServer deleteMark方法')
+  // 暂时不用userId做身份验证，应该要检查recordId是否属于此userId用户 
+  return DBServer.deleteRecord({recordId: params.data.recordId, userId: params.userId})
 }
 
 exports.RecordServer =  {
   updateRecord,
-  queryPageRecords
+  queryPageRecords,
+  deleteMark,
+  deleteRecord
 }

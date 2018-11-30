@@ -4,10 +4,12 @@ let mysql = require('mysql')
 let pool = mysql.createPool({
   //主机
   host: '127.0.0.1',
+  // host: '148.70.2.7',
   //用户
   user: 'root',
   //密码
   password: '80808080',
+  // password: '8080!Qtm',
   //端口
   port: 3306,
   //数据库名
@@ -74,7 +76,7 @@ let query = (sql, todos) => {
  * @return promise
  */
 const insertRecord = (params) => {
-  let sql = `INSERT INTO RECORD(RECORD_NAME, RECORD_URL, USER_ID) VALUES(?, ?, ?)`
+  let sql = `insert into record(record_name, record_url, user_id) values(?, ?, ?)`
   let todo = [params.data.title, params.data.url, params.userId]
   console.log(sql)
   return query(sql, todo).then(res => {
@@ -110,7 +112,7 @@ const insertMultiMark = (params) => {
   params.markList.forEach(val => {
     todos.push([val.markText, params.recordId])
   })
-  let sql = `INSERT INTO MARK(MARK_TEXT, RECORD_ID) VALUES ?`
+  let sql = `insert into mark(mark_text, record_id) values ?`
   console.log(sql)
   return query(sql, [todos]).then(res => {
     let param = {
@@ -144,7 +146,7 @@ const insertNewTags = (params) => {
   params.tags.forEach(val => {
     todos.push([val, params.userId])
   })
-  let sql = `INSERT IGNORE INTO TAG(TAG_NAME, USER_ID) VALUES ?`
+  let sql = `insert ignore into tag(tag_name, user_id) values ?`
   return query(sql, [todos]).then(res => {
     let param = {
       result: false,
@@ -181,7 +183,7 @@ const insertRecordTags = (params) => {
   params.tagIds.forEach(val => {
     todos.push([params.recordId, val])
   })
-  let sql = `INSERT INTO RECORD_TAG(RECORD_ID, TAG_ID) VALUES ?`
+  let sql = `insert into record_tag(record_id, tag_id) values ?`
   console.log(sql)
   return query(sql, [todos]).then(res => {
     let param = {
@@ -206,42 +208,12 @@ const insertRecordTags = (params) => {
 }
 
 /** 
- * 删除文本记录 
- * @param [object] params {recordId: ''}
- * @return promise
- */
-const deleteRecord = (params) => {
-  let sql = `DELETE FROM RECORD WHERE RECORD_ID = ${params.recordId}`
-  console.log(sql)
-  return query(sql, null).then(res => {
-    let param = {
-      result: false,
-      data: null,
-      msg: '删除记录失败'
-    }
-    if(res.result){
-      let data = res.data
-      if(data.affectedRows > 0){
-        param = {
-          result: true,
-          data: null,
-          msg: '删除记录成功'
-        }
-      } 
-    }
-    return param
-  }).catch(e => {
-    console.log(e)
-  })
-}
-
-/** 
  * 删除标注
- * @param [object] params {recordId: 1}
+ * @param [object] params {markId: 1}
  * @return promise
  */
 const deleteMark = (params) => {
-  let sql = `DELETE FROM MARK WHERE RECORD_ID = ${params.recordId}`
+  let sql = `delete from mark where mark_id = ${params.markId}`
   console.log(sql)
   return query(sql, null).then(res => {
     let param = {
@@ -266,6 +238,36 @@ const deleteMark = (params) => {
 }
 
 /** 
+ * 删除记录
+ * @param [object] params {recordId: 1, userId: 1}
+ * @return promise
+ */
+const deleteRecord = (params) => {
+  let sql = `delete from record where record_id = ${params.recordId} and user_id = ${params.userId}`
+  console.log(sql)
+  return query(sql, null).then(res => {
+    let param = {
+      result: false,
+      data: null,
+      msg: '删除记录失败'
+    }
+    if(res.result){
+      let data = res.data
+      if(data.affectedRows > 0){
+        param = {
+          result: true,
+          data: null,
+          msg: '删除记录成功'
+        }
+      }
+    }
+    return param
+  }).catch(e => {
+    console.log(e)
+  })
+}
+
+/** 
  * 查询标签
  * @param [object] params {userId: 1, tags: ['', '']}
  * @return promise
@@ -273,7 +275,7 @@ const deleteMark = (params) => {
 const queryTags = (params) => {
   let sql = ''
   params.tags.forEach(val => {
-    sql += `SELECT * FROM TAG WHERE TAG_NAME = '${val}' AND USER_ID = ${params.userId};`
+    sql += `select * from tag where tag_name = '${val}' and user_id = ${params.userId};`
   })
   return query(sql, null).then(res => {  
     let param = {
@@ -320,7 +322,7 @@ const queryTags = (params) => {
 const queryRecordTags = (params) => {
   let sqls = ''
   params.recordIds.forEach(val => {
-    sqls += `SELECT * FROM TAG WHERE TAG_ID IN (SELECT TAG_ID FROM RECORD_TAG WHERE RECORD_ID = ${val});`
+    sqls += `select * from tag t right join record_tag rt on t.tag_id = rt.tag_id where rt.record_id = ${val};`
   })
   console.log(sqls)
   return query(sqls, null).then(res => {
@@ -329,54 +331,22 @@ const queryRecordTags = (params) => {
       data: null,
       msg: '查询记录标签失败'
     }
-    if(res.result){
-      let data = res.data
-      if(data.length > 0){
+    if (res.result) {
+      let allTags = []
+      res.data.forEach(val => {  
         let arr = []
-        data.forEach(val => {
+        val.forEach(item => {
           arr.push({
-            recordId: val['record_id'],
-            tagId: val['tag_id'],
-            id: val['id']
+            tagId: item['tag_id'],
+            tagName: item['tag_name']
           })
         })
-        param = {
-          result: true,
-          data: arr,
-          msg: '查询记录标签成功'
-        }
-      } 
-    }
-    if (res.result) {
-      let allRecordTags = []
-      let tagArr = []
-      res.data.forEach(val => {  
-        if(val.length){
-          let arr = []
-          val.forEach(item => {
-            arr.push({
-              markId: item['id'],
-              markText: item[''],
-              recordId: item['record_id']
-            })
-          })
-          allMarks.push(arr)
-        } else {
-          markArr.push({
-            markId: val['mark_id'],
-            markText: val['mark_text'],
-            recordId: val['record_id']
-          })
-        }            
+        allTags.push(arr)        
       })
-      if (markArr.length > 0) {
-        allMarks.push(markArr)
-      }
-      param.data = allMarks
       param = {
         result: true,
-        data: allMarks,
-        msg: '查询文本标注成功'
+        data: allTags,
+        msg: '查询记录标签成功'
       }
     } 
     return param
@@ -391,7 +361,7 @@ const queryRecordTags = (params) => {
  * @return promise
  */
 const queryRecord = (params) => {
-  let sql = `SELECT * FROM RECORD WHERE USER_ID = ${params.userId} AND RECORD_NAME = '${params.recordName}'`
+  let sql = `select * from record where user_id = ${params.userId} and record_name = '${params.recordName}'`
   console.log(sql)
   return query(sql, null).then(res => {
     let param = {
@@ -399,6 +369,7 @@ const queryRecord = (params) => {
       data: null,
       msg: '查询记录失败'
     }
+    console.log(res)
     if(res.result){
       let data = res.data
       if(data.length > 0){
@@ -425,7 +396,7 @@ const queryRecord = (params) => {
  * @return promise
  */
 const queryRecordList = (params) => {
-  let sql = `SELECT * FROM RECORD WHERE USER_ID = ${params.userId}`
+  let sql = `select * from record where user_id = ${params.userId}`
   console.log(sql)
   return query(sql, null).then(res => {
     let param = {
@@ -465,7 +436,7 @@ const queryRecordList = (params) => {
 const queryMarkList = (params) => {
   let sql = ''
   params.recordIds.forEach(val => {
-    sql += `SELECT * FROM MARK WHERE RECORD_ID = ${val};`
+    sql += `select * from mark where record_id = ${val};`
   })
   console.log(sql)
   return query(sql, null).then(res => {  
@@ -477,22 +448,20 @@ const queryMarkList = (params) => {
     if (res.result) {
       let allMarks = []
       let markArr = []
-      res.data.forEach(val => {  
-        if(val.length){
+      res.data.forEach(val => { 
+        if(val.length >= 0){
           let arr = []
           val.forEach(item => {
             arr.push({
               markId: item['mark_id'],
-              markText: item['mark_text'],
-              recordId: item['record_id']
+              markText: item['mark_text']
             })
           })
           allMarks.push(arr)
         } else {
           markArr.push({
             markId: val['mark_id'],
-            markText: val['mark_text'],
-            recordId: val['record_id']
+            markText: val['mark_text']
           })
         }            
       })
@@ -518,7 +487,7 @@ const queryMarkList = (params) => {
  * @return promise
  */
 const queryUser = (params) => {
-  let sql = `SELECT * FROM USER WHERE USER_NAME = '${params.name}' AND USER_PASSWORD = '${params.password}'`
+  let sql = `select * from user where user_name = '${params.name}' and user_password = '${params.password}'`
   console.log(sql)
   return query(sql, null).then(res => {
     let param = {
@@ -549,7 +518,7 @@ const queryUser = (params) => {
  * @return promise
  */
 const insertUser = (params) => {
-  let sql = `INSERT INTO USER (USER_NAME, USER_PASSWORD) VALUES ('${params.name}', '${params.password}')`
+  let sql = `insert into user (user_name, user_password) values ('${params.name}', '${params.password}')`
   console.log(sql)
   return query(sql, null).then(res => {
     let param = {
