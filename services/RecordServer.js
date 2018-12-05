@@ -30,7 +30,6 @@ const updateRecord = (params) => {
     userId: params.userId,
     recordName: params.data.title
   }).then(res => {
-    console.log(res)
     if (res.result) {
       // 2.删除原来的记录      
       return DBServer.deleteRecord({
@@ -52,23 +51,21 @@ const updateRecord = (params) => {
         return DBServer.insertNewTags(param)
       }
     } else {
-      return {
-        noTag: true
-      }
+      return Promise.reject({
+        notRealPromiseException: true,
+        data: {
+          result: true,
+          data: null
+        }
+      })
     }
   }).then(res => {
-    if (!res.noTag) {
-      // 5.查询标签Id
-      let param = {
-        userId: params.userId,
-        tags: params.data.tags
-      }
-      return DBServer.queryTags(param)
-    } else {
-      return {
-        result: false
-      }
+    // 5.查询标签Id
+    let param = {
+      userId: params.userId,
+      tags: params.data.tags
     }
+    return DBServer.queryTags(param)
   }).then(res => {
     if (res.result) {
       // 6.插入新的标签记录关系
@@ -81,6 +78,10 @@ const updateRecord = (params) => {
         tagIds: tagIds
       }
       return DBServer.insertRecordTags(param)
+    }
+  }).catch(e => {
+    if(e.notRealPromiseException){
+      return e.data
     }
   })
 }
