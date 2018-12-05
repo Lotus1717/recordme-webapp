@@ -15,7 +15,7 @@ let pool = mysql.createPool({
   //数据库名
   database: 'recordme',
   //最大连接数
-  connectionLimit:100 ,
+  connectionLimit: 100,
   // 允许执行多条sql语句
   multipleStatements: true
 })
@@ -60,13 +60,13 @@ let query = (sql, todos) => {
         } else {
           let param = {
             result: true,
-            data: JSON.parse(JSON.stringify(results))  //去掉打印出的RowDataPacket
-          }  
-          resolve(param)   
-        }    
+            data: JSON.parse(JSON.stringify(results)) //去掉打印出的RowDataPacket
+          }
+          resolve(param)
+        }
       })
       connection.release()
-    })   
+    })
   })
 }
 
@@ -85,8 +85,8 @@ const insertRecord = (params) => {
       data: null,
       msg: '插入文本记录失败'
     }
-    if(res.result){
-      if(res.data.insertId >= 0){
+    if (res.result) {
+      if (res.data.insertId >= 0) {
         param = {
           result: true,
           data: {
@@ -120,15 +120,15 @@ const insertMultiMark = (params) => {
       data: null,
       msg: '插入文本标注失败'
     }
-    if(res.result){ 
+    if (res.result) {
       let data = res.data
-      if(data.affectedRows > 0){
+      if (data.affectedRows > 0) {
         param = {
           result: true,
           data: null,
           msg: '插入文本标注成功'
         }
-      } 
+      }
     }
     return param
   }).catch(e => {
@@ -153,11 +153,11 @@ const insertNewTags = (params) => {
       data: null,
       msg: '插入新标签失败'
     }
-    if (res.result) { 
+    if (res.result) {
       let data = res.data
       if (data.affectedRows > 0) {
         let tagIds = []
-        for(let i = 0; i < data.affectedRows; i++){
+        for (let i = 0; i < data.affectedRows; i++) {
           tagIds.push(data.insertId + i)
         }
         param = {
@@ -174,7 +174,7 @@ const insertNewTags = (params) => {
 }
 
 /** 
- * 插入记录标签失败
+ * 插入记录标签
  * @param [object] params [标签信息] {recordId: '', tagIds: [''...]}
  * @return promise
  */
@@ -191,9 +191,9 @@ const insertRecordTags = (params) => {
       data: null,
       msg: '插入记录标签失败'
     }
-    if(res.result){ 
+    if (res.result) {
       let data = res.data
-      if(data.affectedRows > 0){
+      if (data.affectedRows > 0) {
         param = {
           result: true,
           data: null,
@@ -221,9 +221,9 @@ const deleteMark = (params) => {
       data: null,
       msg: '删除标注失败'
     }
-    if(res.result){
+    if (res.result) {
       let data = res.data
-      if(data.affectedRows > 0){
+      if (data.affectedRows > 0) {
         param = {
           result: true,
           data: null,
@@ -251,13 +251,43 @@ const deleteRecord = (params) => {
       data: null,
       msg: '删除记录失败'
     }
-    if(res.result){
+    if (res.result) {
       let data = res.data
-      if(data.affectedRows > 0){
+      if (data.affectedRows > 0) {
         param = {
           result: true,
           data: null,
           msg: '删除记录成功'
+        }
+      }
+    }
+    return param
+  }).catch(e => {
+    console.log(e)
+  })
+}
+
+/** 
+ * 删除记录标签关系
+ * @param [object] params {recordId: 1}
+ * @return promise
+ */
+const deleteRecordTags = (params) => {
+  let sql = `delete from record_tag where record_id = ${params.recordId}`
+  console.log(sql)
+  return query(sql, null).then(res => {
+    let param = {
+      result: false,
+      data: null,
+      msg: '删除记录标签失败'
+    }
+    if (res.result) {
+      let data = res.data
+      if (data.affectedRows > 0) {
+        param = {
+          result: true,
+          data: null,
+          msg: '删除记录标签成功'
         }
       }
     }
@@ -277,16 +307,19 @@ const queryTags = (params) => {
   params.tags.forEach(val => {
     sql += `select * from tag where tag_name = '${val}' and user_id = ${params.userId};`
   })
-  return query(sql, null).then(res => {  
+  console.log(sql)
+  return query(sql, null).then(res => {
     let param = {
       result: false,
       data: null,
       msg: '查询标签失败'
     }
     let tagArr = []
+    console.log('查询标签结果：')
+    console.log(res.data)
     if (res.result) {
-      res.data.forEach(val => {  
-        if(val.length){
+      res.data.forEach(val => {
+        if (val.length >= 0) {
           val.forEach(item => {
             tagArr.push({
               tagId: item['tag_id'],
@@ -296,11 +329,11 @@ const queryTags = (params) => {
           })
         } else {
           tagArr.push({
-            tagId: item['tag_id'],
-              tagName: item['tag_name'],
-              userId: item['user_id']
+            tagId: val['tag_id'],
+            tagName: val['tag_name'],
+            userId: val['user_id']
           })
-        }            
+        }
       })
       param = {
         result: true,
@@ -320,6 +353,7 @@ const queryTags = (params) => {
  * @return promise
  */
 const queryRecordTags = (params) => {
+  console.log(params)
   let sqls = ''
   params.recordIds.forEach(val => {
     sqls += `select * from tag t right join record_tag rt on t.tag_id = rt.tag_id where rt.record_id = ${val};`
@@ -333,22 +367,33 @@ const queryRecordTags = (params) => {
     }
     if (res.result) {
       let allTags = []
-      res.data.forEach(val => {  
+      let tagArr = []
+      res.data.forEach(val => {
         let arr = []
-        val.forEach(item => {
-          arr.push({
-            tagId: item['tag_id'],
-            tagName: item['tag_name']
+        if (val.length >= 0) {
+          val.forEach(item => {
+            arr.push({
+              tagId: item['tag_id'],
+              tagName: item['tag_name']
+            })
           })
-        })
-        allTags.push(arr)        
+          allTags.push(arr)
+        } else {
+          tagArr.push({
+            tagId: val['tag_id'],
+            tagName: val['tag_name']
+          })
+        }       
       })
+      if(tagArr.length > 0){
+        allTags.push(tagArr)
+      }
       param = {
         result: true,
         data: allTags,
         msg: '查询记录标签成功'
       }
-    } 
+    }
     return param
   }).catch(e => {
     console.log(e)
@@ -369,10 +414,9 @@ const queryRecord = (params) => {
       data: null,
       msg: '查询记录失败'
     }
-    console.log(res)
-    if(res.result){
+    if (res.result) {
       let data = res.data
-      if(data.length > 0){
+      if (data.length > 0) {
         param = {
           result: true,
           data: {
@@ -404,9 +448,9 @@ const queryRecordList = (params) => {
       data: null,
       msg: '查询文本记录失败'
     }
-    if(res.result){
+    if (res.result) {
       let data = res.data
-      if(data.length > 0){
+      if (data.length >= 0) {
         let arr = []
         data.forEach(val => {
           arr.push({
@@ -439,7 +483,7 @@ const queryMarkList = (params) => {
     sql += `select * from mark where record_id = ${val};`
   })
   console.log(sql)
-  return query(sql, null).then(res => {  
+  return query(sql, null).then(res => {
     let param = {
       result: false,
       data: null,
@@ -448,8 +492,8 @@ const queryMarkList = (params) => {
     if (res.result) {
       let allMarks = []
       let markArr = []
-      res.data.forEach(val => { 
-        if(val.length >= 0){
+      res.data.forEach(val => {
+        if (val.length >= 0) {
           let arr = []
           val.forEach(item => {
             arr.push({
@@ -463,7 +507,7 @@ const queryMarkList = (params) => {
             markId: val['mark_id'],
             markText: val['mark_text']
           })
-        }            
+        }
       })
       if (markArr.length > 0) {
         allMarks.push(markArr)
@@ -474,7 +518,7 @@ const queryMarkList = (params) => {
         data: allMarks,
         msg: '查询文本标注成功'
       }
-    } 
+    }
     return param
   }).catch(e => {
     console.log(e)
@@ -495,8 +539,8 @@ const queryUser = (params) => {
       data: null,
       msg: '查询用户失败'
     }
-    if(res.result){
-      if(res.data.length > 0){
+    if (res.result) {
+      if (res.data.length > 0) {
         param = {
           result: true,
           data: {
@@ -526,8 +570,8 @@ const insertUser = (params) => {
       data: null,
       msg: '新增用户失败'
     }
-    if(res.result){
-      if(res.data.insertId > 0){
+    if (res.result) {
+      if (res.data.insertId > 0) {
         param = {
           result: true,
           data: {
@@ -553,6 +597,7 @@ exports.DBServer = {
   insertUser,
   deleteRecord,
   deleteMark,
+  deleteRecordTags,
   queryRecordList,
   queryMarkList,
   queryTags,
