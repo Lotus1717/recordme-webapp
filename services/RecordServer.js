@@ -139,6 +139,7 @@ const queryPageRecords = (params) => {
     if (res.result) {
       res.data.forEach((val, i) => {
         list[i].markList = val
+        list[i].tagList = []
       })
     }
   }).then(res => {
