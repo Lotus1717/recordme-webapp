@@ -35,7 +35,7 @@ let httpObj = http.createServer((request, response) => {
     })   
   }
   
-}).listen(8007, '148.70.2.7')
+}).listen(8010, '127.0.0.1')
 
 /** 
  * http请求分发
