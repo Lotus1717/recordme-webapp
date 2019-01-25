@@ -47,7 +47,7 @@ const distributeHttpRequest = (url, params) => {
   let arr = url.split('/')
   let serverName = arr[1]
   let serverFunction = arr[2]
-  let server = require('./services/'+ serverName)[serverName]
+  let server = require('./build/'+ serverName)
   return server[serverFunction](params)
 }
 
