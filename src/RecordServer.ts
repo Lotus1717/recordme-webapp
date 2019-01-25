@@ -72,6 +72,9 @@ export async function queryPageRecords (params: DuckTypes.userVal) {
     let res1 = await queryUserRecords(params)
     let recordIds = []
     res1.data.forEach(val => {
+      if (recordIds.indexOf(val.recordId) !== -1) {
+        return
+      }
       let todos = res1.data.filter(r => r.recordId === val.recordId)
       if (todos.length > 0) {
         let record = {recordId: todos[0].recordId, recordName: todos[0].recordName, recordUrl: todos[0].recordUrl}
