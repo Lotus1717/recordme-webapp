@@ -4,13 +4,13 @@ let mysql = require('mysql')
 // 创建数据库连接池
 let pool = mysql.createPool({
   //主机
-  host: '127.0.0.1',
-  // host: '148.70.2.7',
+  // host: '127.0.0.1',
+  host: '148.70.2.7',
   //用户
   user: 'root',
   //密码
-  password: '80808080',
-  // password: '8080!Qtm',
+  // password: '80808080',
+  password: '8080!Qtm',
   //端口
   port: 3306,
   //数据库名
