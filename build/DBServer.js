@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 let mysql = require('mysql');
 let pool = mysql.createPool({
-    host: '127.0.0.1',
+    host: '148.70.2.7',
     user: 'root',
-    password: '80808080',
+    password: '8080!Qtm',
     port: 3306,
     database: 'recordme',
     connectionLimit: 100,
