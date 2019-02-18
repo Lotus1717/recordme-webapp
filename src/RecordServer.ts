@@ -152,7 +152,7 @@ export async function updateRecordTags (params: DuckTypes.URecordTagsVal) {
 // updateRecord(notags).then(res => {console.log(res)})
 // let tags = {'userId': 1, 'data': {'url': '123', title: 'abc', 'recordList': [{'markText': '11342', 'record': ''}], 'tags': ['a', 'b']}}
 // updateRecord(tags).then(res => {console.log(res)})
-queryPageRecords({'userId': 1}).then(res => console.log(res))
+// queryPageRecords({'userId': 1}).then(res => console.log(res))
 // deleteMark({'userId': 1, 'data': {'markId': 125, 'recordId': 128}}).then(res => console.log(res))
 // deleteRecord({'userId': 1, 'data': {'recordId': 128}}).then(res => console.log(res))
 // updateRecordTags({'userId': 1, 'data': {'tags': [''], 'recordId': 62}}).then(res => console.log(res))
